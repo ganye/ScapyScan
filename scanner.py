@@ -33,8 +33,6 @@ class TCPConnScan(_PortScanner):
       src_port = RandShort()
       resp = sr1(IP(dst=self._target)/TCP(dport=port, flags="S"), timeout=self._timeout, verbose=False)
       if isinstance(resp, NoneType):
-         self._log.write("[DEBUG] Repsonse was of type NoneType")
-         self._log.write(resp)
          self._log.write("[-] Port %d CLOSED" % port)
       elif resp.haslayer(TCP):
          if resp.getlayer(TCP).flags == 0x12:
@@ -42,5 +40,4 @@ class TCPConnScan(_PortScanner):
             self._log.write("[+] Port %d OPEN" % port)
             self.open_ports.append(port)
          elif resp.getlayer(TCP).flags == 0x14:
-            self._log.write("[DEBUG] Flag returned was 0x14")
             self._log.write("[-] Port %d CLOSED" % port)
