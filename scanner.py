@@ -1,11 +1,12 @@
 from scapy.all import *
+
 from types import NoneType
 from logger import Logger
 import logging
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
-__all__ = ["TCPConnScan",]
+__all__ = ["TCPConnScan","TCPStealthScan",]
 
 class _PortScanner:
    """
@@ -31,13 +32,31 @@ class _PortScanner:
 class TCPConnScan(_PortScanner):
    def _scan_port(self, port):
       src_port = RandShort()
-      resp = sr1(IP(dst=self._target)/TCP(dport=port, flags="S"), timeout=self._timeout, verbose=False)
+      resp = sr1(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="S"), timeout=self._timeout, verbose=False)
       if isinstance(resp, NoneType):
          self._log.write("[-] Port %d CLOSED" % port)
       elif resp.haslayer(TCP):
          if resp.getlayer(TCP).flags == 0x12:
-            send_rst = sr(IP(dst=self._target)/TCP(dport=port, flags="AR"), timeout=self._timeout, verbose=False)
+            send_rst = sr(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="AR"), timeout=self._timeout, verbose=False)
             self._log.write("[+] Port %d OPEN" % port)
             self.open_ports.append(port)
          elif resp.getlayer(TCP).flags == 0x14:
             self._log.write("[-] Port %d CLOSED" % port)
+
+class TCPStealthScan(_PortScanner):
+   def _scan_port(self, port):
+      src_port = RandShort()
+      resp = sr1(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="S"), timeout=self._timeout, verbose=False)
+      if isinstance(resp, NoneType):
+         self._log.write("[-] Port %d CLOSED" % port)
+      elif resp.haslayer(TCP):
+         if resp.getlayer(TCP).flags == 0x12:
+            rst = sr(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="R"), timeout=self._timeout, verbose=False)
+            self._log.write("[+] Port %d OPEN" % port)
+            self.open_ports.append(port)
+         elif resp.getlayer(TCP).flags == 0x14:
+            self._log.write("[-] Port %d CLOSED" % port)
+      elif resp.haslayer(ICMP):
+         if int(resp.getlayer(ICMP).type) == 3 and \
+            int(resp.getlayer(ICMP).code) in [1,2,3,9,10,13]:
+            self._log.write("[-] Port %d FILTERED" % port)
