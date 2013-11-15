@@ -1,6 +1,4 @@
 from scapy.all import *
-
-from types import NoneType
 from logger import Logger
 import logging
 
@@ -16,11 +14,10 @@ class _PortScanner:
       self._target = target
       self._timeout = timeout
       self._log = Logger(verbose=verbose)
-      self.open_ports = []
+      self._results = {}
 
    def scan(self, ports):
       for port in ports:
-         self._log.write("[*] Scanning port %d" % port)
          self._scan_port(port)
 
    def _scan_port(self, port):
@@ -32,31 +29,32 @@ class _PortScanner:
 class TCPConnScan(_PortScanner):
    def _scan_port(self, port):
       src_port = RandShort()
+      # Sends a SYN 
       resp = sr1(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="S"), timeout=self._timeout, verbose=False)
-      if isinstance(resp, NoneType):
-         self._log.write("[-] Port %d CLOSED" % port)
+      if resp is None:
+         self._results[port] = "closed"
       elif resp.haslayer(TCP):
          if resp.getlayer(TCP).flags == 0x12:
             send_rst = sr(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="AR"), timeout=self._timeout, verbose=False)
-            self._log.write("[+] Port %d OPEN" % port)
+            self._results[port] = "open"
             self.open_ports.append(port)
          elif resp.getlayer(TCP).flags == 0x14:
-            self._log.write("[-] Port %d CLOSED" % port)
+            self._results[port] = "closed"
 
 class TCPStealthScan(_PortScanner):
    def _scan_port(self, port):
       src_port = RandShort()
       resp = sr1(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="S"), timeout=self._timeout, verbose=False)
-      if isinstance(resp, NoneType):
-         self._log.write("[-] Port %d CLOSED" % port)
+      if resp is None:
+         self._results[port] = "closed"
       elif resp.haslayer(TCP):
          if resp.getlayer(TCP).flags == 0x12:
             rst = sr(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="R"), timeout=self._timeout, verbose=False)
-            self._log.write("[+] Port %d OPEN" % port)
+            self._results[port] = "open"
             self.open_ports.append(port)
          elif resp.getlayer(TCP).flags == 0x14:
-            self._log.write("[-] Port %d CLOSED" % port)
+            self._results[port] = "closed"
       elif resp.haslayer(ICMP):
          if int(resp.getlayer(ICMP).type) == 3 and \
             int(resp.getlayer(ICMP).code) in [1,2,3,9,10,13]:
-            self._log.write("[-] Port %d FILTERED" % port)
+            self._results[port] = "filtered"
