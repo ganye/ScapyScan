@@ -57,6 +57,7 @@ class TCPConnScan(_PortScanner):
 
 class TCPStealthScan(_PortScanner):
    __scanner__ = "TCP Stealth Scan"
+
    def _scan_port(self, port):
       src_port = RandShort()
       resp = sr1(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="S"), timeout=self._timeout, verbose=False)
