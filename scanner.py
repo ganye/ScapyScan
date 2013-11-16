@@ -30,11 +30,15 @@ class _PortScanner:
       raise NotImplementedError()
 
    def _report(self):
+      scanned = len(self._results)
+      closed = 0
       print "%s results for %s" % (self.__scanner__, self._target)
       print "PORT\tSTATE"
-      for key, value in self._results.iteritems():
-         if value is not "closed":
-            print "%-7s %s" % (key, value)
+      for key, value in sorted(self._results.iteritems()):
+         if value is "closed":
+            closed += 1
+         print "%-7s %s" % (key, value)
+      print "Scanned %d ports, of which %d were closed." % (scanned, closed)
 
 class TCPConnScan(_PortScanner):
    __scanner__ = "TCP Connect Scan"
@@ -106,7 +110,7 @@ class TCPFinScan(_PortScanner):
          self._results[port] = "open|filtered"
 
       elif resp.haslayer(TCP):
-         if resp.getlayer(TCP).falgs == 0x14:
+         if resp.getlayer(TCP).flags == 0x14:
             self._results[port] = "closed"
 
       elif resp.haslayer(ICMP):
