@@ -4,7 +4,7 @@ import logging
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
-__all__ = ["TCPConnScan","TCPStealthScan",]
+__all__ = ["TCPConnScan","TCPStealthScan","TCPXmasScan",]
 
 class _PortScanner:
    """
@@ -34,7 +34,7 @@ class _PortScanner:
       print "PORT\tSTATE"
       for key, value in self._results.iteritems():
          if value is not "closed":
-            print "%-7 %s" % (key, value)
+            print "%-7s %s" % (key, value)
 
 class TCPConnScan(_PortScanner):
    __scanner__ = "TCP Connect Scan"
@@ -75,5 +75,23 @@ class TCPStealthScan(_PortScanner):
 
       elif resp.haslayer(ICMP):
          if int(resp.getlayer(ICMP).type) == 3 and \
-            int(resp.getlayer(ICMP).code) in [1,2,3,9,10,13]:
+            int(resp.getlayer(ICMP).code) in [1,2,3,9,10,13]:  # Destination Host Unreachable
+            self._results[port] = "filtered"
+
+class TCPXmasScan(_PortScanner):
+   __scanner__ = "TCP Xmas Scan"
+
+   def _scan_port(self, port):
+      src_port = RandShort()
+      resp = sr1(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags="FPU"), timeout=self._timeout, verbose=False)
+      if resp is None:
+         self._results[port] = "open|filtered"
+
+      elif resp.haslayer(TCP):
+         if resp.getlayer(TCP).flags == 0x14:
+            self._results[port] = "closed"
+
+      elif resp.haslayer(ICMP):
+         if int(resp.getlayer(ICMP).type) == 3 and \
+            int(resp.getlayer(ICMP).code) in [1,2,3,9,10,13]:  # Destination Host Unreachable
             self._results[port] = "filtered"
