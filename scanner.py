@@ -4,7 +4,7 @@ import logging
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
-__all__ = ["TCPConnScan", "TCPStealthScan", "TCPXmasScan", "TCPFinScan",]
+__all__ = ["TCPConnScan", "TCPHalfScan", "TCPXmasScan", "TCPFinScan", "TCPNullScan",]
 
 class _PortScanner:
    """
@@ -55,8 +55,8 @@ class TCPConnScan(_PortScanner):
          elif resp.getlayer(TCP).flags == 0x14:
             self._results[port] = "closed"
 
-class TCPStealthScan(_PortScanner):
-   __scanner__ = "TCP Stealth Scan"
+class TCPHalfScan(_PortScanner):
+   __scanner__ = "TCP Half Scan"
 
    def _scan_port(self, port):
       src_port = RandShort()
@@ -107,6 +107,24 @@ class TCPFinScan(_PortScanner):
 
       elif resp.haslayer(TCP):
          if resp.getlayer(TCP).falgs == 0x14:
+            self._results[port] = "closed"
+
+      elif resp.haslayer(ICMP):
+         if int(resp.getlayer(ICMP).type) == 3 and \
+            int(resp.getlayer(ICMP).code) in [1,2,3,9,10,13]: # Destination Host Unreachable
+            self._results[port] = "filtered"
+
+class TCPNullScan(_PortScanner):
+   __scanner__ = "TCP Null Scan"
+
+   def _scan_port(self, port):
+      src_port = RandShort()
+      resp = sr1(IP(dst=self._target)/TCP(sport=src_port, dport=port, flags=""), timeout=self._timeout, verbose=False)
+      if resp is None:
+         self._results[port] = "open|filtered"
+
+      elif resp.haslayer(TCP):
+         if resp.getlayer(TCP).flags == 0x14:
             self._results[port] = "closed"
 
       elif resp.haslayer(ICMP):
