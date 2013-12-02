@@ -4,16 +4,21 @@
 import argparse
 from scanner import *
 
-def argparse():
+def argsparser():
    parser = argparse.ArgumentParser()
    parser.add_argument("-t", help="Target to scan")
-   parser.add_argument("-sT", help="Performs a TCP Connect scan")
-   parser.add_argument("-sS", help="Performs a TCP Half (Stealth) scan")
-   parser.add_argument("-sX", help="Performs a TCP Xmas scan")
-   parser.add_argument("-sN", help="Performs a TCP Null scan")
-   parser.add_argument("-sF", help="Performs a TCP Fin scan")
+   parser.add_argument("-sT", "--conn-scan", help="Performs a TCP Connect scan",
+                       action="store_true")
+   parser.add_argument("-sS", "--half-scan", help="Performs a TCP Half (Stealth) scan",
+                       action="store_true")
+   parser.add_argument("-sX", "--xmas-scan", help="Performs a TCP Xmas scan",
+                       action="store_true")
+   parser.add_argument("-sN", "--null-scan", help="Performs a TCP Null scan",
+                       action="store_true")
+   parser.add_argument("-sF", "--fin-scan", help="Performs a TCP Fin scan",
+                       action="store_true")
    parser.add_argument("-q", "--quiet", help="Send any output to a log file",
-                       action="log", default=None, type=str)
+                       default=None)
    
    return parser.parse_args()
 
@@ -32,4 +37,5 @@ def map_scanner_arg(arg):
       return None
 
 if __name__ == "__main__":
-   pass
+   args = argsparser()
+   print args
