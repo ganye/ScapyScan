@@ -12,7 +12,7 @@ class _PortScanner:
    """
    __scanner__ = "Base Scanner"  # Used in the end report
 
-   def __init__(self, target, timeout=10, verbose=True):
+   def __init__(self, target, timeout=2, verbose=True):
       self._target = target
       self._timeout = timeout
       self._log = Logger(verbose=verbose)
