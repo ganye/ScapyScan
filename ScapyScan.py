@@ -56,7 +56,8 @@ def argsparser():
    timeout = args.timeout
 
    if args.ports:
-      ports = args.ports
+      ports = args.ports.split(",")
+      ports = map(int,ports)
    else:
       ports = COMMN_PORTS.keys()
 
